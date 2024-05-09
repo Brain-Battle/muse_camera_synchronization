@@ -5,7 +5,7 @@ import time
 
 muses = list_muses()
 
-IP = "192.168.54.1" #IP of camera
+IP = "192.168.54.1" #IP of camer
 control = lc.CameraControl(IP)
 UDP_PORT = 5111
 
