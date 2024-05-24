@@ -1,6 +1,6 @@
 import requests as r
 
-class CameraControl:
+class LumixControl:
 	def __init__(self, cam_ip):
 		self.cam_ip = cam_ip
 		self.baseurl = "http://{ip}/cam.cgi".format(ip=self.cam_ip)
@@ -254,4 +254,4 @@ class CameraControl:
 
 if __name__ == "__main__":
 	IP = "10.0.1.105"
-	control = CameraControl(IP) #IP of camera
+	control = LumixControl(IP) #IP of camera
