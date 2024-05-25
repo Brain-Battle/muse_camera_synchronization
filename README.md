@@ -9,7 +9,7 @@ This repository contains:
 
 ## LumixControl
 
-LumixControl class can be used to control Panasonic Lumix Sony Wi-Fi enabled cameras remotely. This module was written by [https://github.com/palmdalian](@palmdalian) and [https://github.com/johan12345](@johan12345) at GitHub.
+LumixControl class can be used to control Panasonic Lumix Sony Wi-Fi enabled cameras remotely. This module was written by [@palmdalian](https://github.com/palmdalian) and [@johan12345](https://github.com/johan12345) at GitHub.
 
 The camera and the controlling device (i.e laptop) must be connected to the same network.
 
@@ -21,7 +21,7 @@ All class methods allow user to send requests with specific usages.
 
 ## SonyControl
 
-SonyControl class can be used to control Sony Wi-Fi enabled cameras remotely. This module was written by [https://github.com/Akysens](@Akysens) at GitHub.
+SonyControl class can be used to control Sony Wi-Fi enabled cameras remotely. This module was written by [@Akysens](https://github.com/Akysens) at GitHub, using Sony Remote Control API.
 
 The camera and the controlling device (i.e laptop) must be connected to the same network.
 
