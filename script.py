@@ -1,11 +1,10 @@
-import sony_control as sc
-import lumix_control as lc
+from camera_control import SonyControl, LumixControl
 from time import sleep
 import threading
 
-sony_control = sc.SonyControl()
+sony_control = SonyControl()
 sony_control.set_camera_url("http://10.0.0.1:10000/sony/camera")
-lumix_control = lc.LumixControl("192.168.9.129")
+lumix_control = LumixControl("192.168.9.129")
 
 def lumix_take_pic():
     print(lumix_control.capture_photo().text)
