@@ -56,10 +56,12 @@ class SonyControl:
     """
         SonyControl class for controlling Wi-Fi enabled Sony cameras.
         
+        Controlling device must be in the same network as the camera.
+
         Tested on RX10.
 
         Object Attributes:
-        - _camera_url (str)
+        - camera_url (str): Internal camera URL that is used to communicate with the camera.
     """
     
     def __init__(self, camera_url: str = None):
@@ -135,6 +137,15 @@ class SonyControl:
         print(self._camera_url)
 
     def check_for_errors(self, json_text):
+        """
+            Raises errors according to the error code of the given JSON text.
+
+            If there is no error code, it raises nothing.
+
+            Arguments:
+            - json_text: The JSON object to check.
+        """
+        
         # Raise error according to json
         if "error" in json_text:
             raise CameraException(int(json_text["error"][0]))
@@ -146,6 +157,14 @@ class SonyControl:
         self._camera_url = camera_url
 
     def get_shoot_mode(self):
+        """
+            Get the current shooting mode of the camera.
+
+            The return value can be "still", "movie", "audio", "intervalstill" and "looprec".
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
         data = {
             "method": "getShootMode",
             "params": [],
@@ -160,6 +179,13 @@ class SonyControl:
         return json_response
     
     def get_supported_shoot_mode(self):
+        """
+            Gets supported shooting modes of the camera.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "getSupportedShootMode",
             "params": [],
@@ -175,6 +201,17 @@ class SonyControl:
 
 
     def set_shoot_mode(self, mode: str):
+        """
+            Set the shooting mode of the camera.
+
+            Arguments:
+            - mode (str): The mode of shooting from the camera. This can be anything that
+            the camera returns upon calling get_supported_shoot_mode().
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "setShootMode",
             "params": [mode],
@@ -189,6 +226,13 @@ class SonyControl:
         return json_response
 
     def take_picture(self):
+        """
+            Capture a picture.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "actTakePicture",
             "params": [],
@@ -202,6 +246,13 @@ class SonyControl:
         return json_response
     
     def await_take_picture(self):
+        """
+            Asynchroniously take a picture.
+         
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+       
         data = {
             "method": "awaitTakePicture",
             "params": [],
@@ -215,6 +266,13 @@ class SonyControl:
         return json_response
 
     def start_movie_recording(self):
+        """
+            Start recording video.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+       
         data = {
             "method": "startMovieRec",
             "params": [],
@@ -228,6 +286,13 @@ class SonyControl:
         return json_response
 
     def stop_movie_recording(self):
+        """
+            Stop recording video
+            
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "stop_movie_recording",
             "params": [],
@@ -241,6 +306,15 @@ class SonyControl:
         return json_response
 
     def start_live_view(self):
+        """
+            Starts the live view.
+
+            Camera returns a link to the live feed in its response.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "startLiveview",
             "params": [],
@@ -254,6 +328,13 @@ class SonyControl:
         return json_response
 
     def stop_live_view(self):
+        """
+            Stop the live view.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "stopLiveview",
             "params": [],
@@ -266,7 +347,21 @@ class SonyControl:
         self.check_for_errors(json_response)
         return json_response
     
-    def start_live_view_with_size(self, size):
+    def start_live_view_with_size(self, size: str):
+        """
+            Start liveview with a specific size.
+
+            Camera returns a link to the live feed in its response.
+
+            Arguments:
+            - size (str): Can be "M", which indicates VGA size; or can be "L",
+            which indicates XGA size scale.
+            
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "startLiveviewWithSize",
             "params": [size],
@@ -280,6 +375,13 @@ class SonyControl:
         return json_response
     
     def get_live_view_size(self):
+        """
+            Get the size of the live feed.
+            
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "getLiveviewsize",
             "params": [],
@@ -293,6 +395,13 @@ class SonyControl:
         return json_response
     
     def get_supported_live_view_size(self):
+        """
+            Get the live view sizes that the camera supports.
+            
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+       
         data = {
             "method": "getSupportedLiveviewSize",
             "params": [],
@@ -306,6 +415,16 @@ class SonyControl:
         return json_response
     
     def set_live_view_frame_info(self, info: bool):
+        """
+            Set whether live view should include a frame info.
+
+            Arguments:
+            - info (bool): set True if frame info should be included.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         bool_text = "true" if True else "false"
 
         data = {
@@ -321,6 +440,13 @@ class SonyControl:
         return json_response
 
     def get_live_view_frame_info(self):
+        """
+            Get whether frame info is used or no.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "getLiveviewFrameInfo",
             "params": [],
@@ -399,6 +525,13 @@ class SonyControl:
         return json_response
 
     def get_zoom_setting(self):
+        """
+            Get the current zoom setting of the camera.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "getZoomSetting",
             "params": [],
@@ -412,6 +545,13 @@ class SonyControl:
         return json_response
 
     def get_supported_zoom_setting(self):
+        """
+            Get the zoom settings the camera supports. 
+       
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+       
         data = {
             "method": "getSupportedZoomSetting",
             "params": [],
@@ -425,6 +565,13 @@ class SonyControl:
         return json_response
     
     def act_half_press_shutter(self):
+        """
+            Simulate half-pressing the shutter.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "actHalfPressShutter",
             "params": [],
@@ -438,6 +585,13 @@ class SonyControl:
         return json_response
 
     def cancel_half_press_shutter(self):
+        """
+            Cancel half-press shutter.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "cancelHalfPressShutter",
             "params": [],
@@ -450,7 +604,7 @@ class SonyControl:
         self.check_for_errors(json_response)
         return json_response
 
-    def setTouchAFPosition(self, x: float, y: float):
+    def set_touch_af_position(self, x: float, y: float):
         """
             Set the touch AF position of the camera.
 
@@ -475,6 +629,13 @@ class SonyControl:
         return json_response
     
     def get_touch_af_position(self):
+        """
+            Get the touch AF position.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "getTouchAFPosition",
             "params": [],
@@ -488,6 +649,13 @@ class SonyControl:
         return json_response
     
     def cancel_touch_af_position(self):
+        """
+            Cancel the current touch AF position.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "cancelTouchAFPosition",
             "params": [],
@@ -501,6 +669,17 @@ class SonyControl:
         return json_response
 
     def act_tracking_focus(self, x_pos: float, y_pos: float):
+        """
+            Simulate tracking focus.
+
+            Argument:
+            - x_pos (float): X position as percentage
+            - y_pos (float): Y position as percentage
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "actTrackingFocus",
             "params": [{
@@ -517,6 +696,13 @@ class SonyControl:
         return json_response
 
     def cancel_tracking_focus(self):
+        """
+            Cancel tracking focus.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "cancelTrackingFocus",
             "params": [],
@@ -563,6 +749,13 @@ class SonyControl:
         return json_response
 
     def get_tracking_focus(self):
+        """
+            Get the current tracking focus setting.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "getTrackingFocus",
             "params": [],
@@ -576,6 +769,13 @@ class SonyControl:
         return json_response
     
     def get_supported_tracking_focus(self):
+        """
+            Get the tracking focus settings supported by the camera.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "getSupportedTrackingFocus",
             "params": [],
@@ -594,7 +794,8 @@ class SonyControl:
             Sets the timer of the camera.
 
             Arguments:
-            - time (int): time in seconds        
+            - time (int): time in seconds, must be a value that is returned
+            by the get_supported_self_timer() method.      
         """
         
         data = {
@@ -610,6 +811,13 @@ class SonyControl:
         return json_response
 
     def get_self_timer(self):
+        """
+            Get the current set timer.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+
         data = {
             "method": "getSelfTimer",
             "params": [],
@@ -623,6 +831,13 @@ class SonyControl:
         return json_response
     
     def get_supported_self_timer(self):
+        """
+            Get the timer settings that the camera supports.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "getSupportedSelfTimer",
             "params": [],
@@ -636,21 +851,15 @@ class SonyControl:
         return json_response
 
     def get_available_apis(self):
+        """
+            Get all available APIs of the camera.
+
+            Returns:
+            - json_response: Response from the camera upon the request
+        """
+        
         data = {
             "method": "getAvailableApiList",
-            "params": [],
-            "id": 1,
-            "version": "1.0"
-        }
-
-        json_data = json.dumps(data)
-        json_response = requests.post(self._camera_url, data=json_data)
-        self.check_for_errors(json_response)
-        return json_response
-
-    def take_picture(self):
-        data = {
-            "method": "actTakePicture",
             "params": [],
             "id": 1,
             "version": "1.0"
