@@ -1,3 +1,5 @@
+.venv
+*.png
 __pycache__
-*.pyc
-.gitignore
+*.csv
+*.mp4
