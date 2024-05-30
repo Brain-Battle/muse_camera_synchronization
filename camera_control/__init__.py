@@ -1,2 +1,3 @@
 from camera_control.sony_control import SonyControl
 from camera_control.lumix_control import LumixControl
+from camera_control.gopro_control import GoProControl

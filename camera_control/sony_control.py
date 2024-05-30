@@ -53,7 +53,8 @@ class SonyControl:
             resp = server.recv(1024)
         except:
             raise CameraNotFoundException()
-        
+
+        # Close server as it is not needed anymore. 
         server.close()
 
         # Find the camera XML location 
@@ -86,6 +87,7 @@ class SonyControl:
 
         self._camera_url = camera_url
 
+        # Print camera url to console for copying.
         print(self._camera_url)
 
     def check_for_errors(self, json_text):
@@ -113,7 +115,6 @@ class SonyControl:
             Get the camera URL.
         """
         return self._camera_url
-
 
     def get_shoot_mode(self):
         """
