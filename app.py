@@ -69,9 +69,13 @@ class App:
         eeg1_data = self.eeg1_data.get()
         eeg2_data = self.eeg2_data.get()
         if eeg1_data and eeg2_data:
-            connect_EEG(filenames=["1.csv", "2.csv"], names=[eeg1_data, eeg2_data])
+            connect_EEG(fnames=["1.csv", "2.csv"], names=[eeg1_data, eeg2_data])
             self.eeg_status.set("Connected")
             messagebox.showinfo("Info", f"EEG Connected with data: EEG1={eeg1_data}, EEG2={eeg2_data}")
+        elif eeg1_data:
+            connect_EEG(fnames=["1.csv"], names=[eeg1_data])
+            self.eeg_status.set("Connected")
+            messagebox.showinfo("Info", f"EEG Connected with data: EEG1={eeg1_data}")
         else:
             messagebox.showwarning("Warning", "Please enter data for both EEG1 and EEG2")
 
@@ -95,6 +99,7 @@ muses = []
 t_init = 0
 video_init = 0
 control = None
+filenames = []
 
 """
     This is a modified version of the record_direct function that ships with muselsl.
@@ -103,14 +108,15 @@ control = None
     at the same time.
 """
 
-def connect_EEG(
-            filenames=None,
+def connect_EEG(fnames:list,
             backend='auto',
             interface=None,
             names=None):
     global eeg_samples
     global timestamps
     global muses
+    global filenames
+    filenames = fnames
     devices_number = len(names)
     addresses = [0 for i in range(devices_number)]
     if backend == 'bluemuse':
@@ -123,9 +129,9 @@ def connect_EEG(
             print('Muse could not be found')
             return
         else:
-            addresses[i] = found_muse['address']
-            names[i] = found_muse['name']
-        print('Connecting to %s : %s...' % (name if name else 'Muse', address))
+            addresses[device] = found_muse['address']
+            names[device] = found_muse['name']
+            print('Connecting to %s : %s...' % (names[device] if names[device] else 'Muse', addresses[device]))
     for device in range(len(filenames)):
         filenames[device] = os.path.join(
             os.getcwd(),
@@ -161,13 +167,14 @@ def start_data_recording():
     print('Start video recording at time t= %.3f' % video_init)
     print('Start recording at time t=%.3f' % t_init)
 
-def stop_data_recording():
+def stop_recording_data():
     global eeg_samples
     global timestamps
     global muses
     global control
     global t_init
     global video_init
+    global filenames
     for muse in muses:
         muse.stop()
     control.video_record_stop()
@@ -192,4 +199,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = App(root)
     root.mainloop()
-
