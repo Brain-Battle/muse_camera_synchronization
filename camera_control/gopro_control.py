@@ -27,6 +27,7 @@ class GoProUuid:
 class GoProControl:
     def __init__(self):
         self._device: BleakClient = None
+        self._name: str = None
         self._event: asyncio.Event = asyncio.Event()
 
     @staticmethod
@@ -60,12 +61,14 @@ class GoProControl:
 
         if self._device.is_connected:
             logging.info(f"Device succesfully connected. Address: {self._device.address}")
+            self._name = device.name
 
     async def disconnect(self) -> None:
         if self._device != None:
             logging.info(f"Disconnecting from: {self._device.address}")
             if await self._device.disconnect():
                 self._device = None
+                self._name = None
 
     async def _send_command_request(self, request: GoProRequest):
         request_uuid = GoProUuid.COMMAND_REQUEST
