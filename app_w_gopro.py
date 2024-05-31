@@ -104,6 +104,8 @@ muses = []
 t_init = 0
 video_init = 0
 control = None
+gopro_1 = None
+gopro_2 = None
 filenames = []
 
 """
@@ -154,16 +156,33 @@ def connect_EEG(fnames:list,
 
 def connect_cameras(IP="192.168.54.1"):
     global control
+    global gopro_1
+    global gopro_2
     control = LumixControl(IP)
     control.start_camera_control()
+    gopro_1 = GoProControl()
+    gopro_2 = GoProControl()
+
+    device_list = asyncio.run(GoProControl.search_device())
+
+    if len(device_list) > 0:
+        asyncio.run(gopro_1.connect(device_list.popitem()[1]))
+        asyncio.run(gopro_2.connect(device_list.popitem()[1]))
+
 
 def start_data_recording():
     global muses
     global control
+    global gopro_1
+    global gopro_2
     global t_init
     global video_init
 
     control.video_record_start()
+    asyncio.run(gopro_1.start_shutter())
+    print("GoPro1 started at time t= %.3f" % time())
+    asyncio.run(gopro_2.start_shutter())
+    print("GoPro2 started at time t= %.3f" % time())
     video_init = time()
     for muse in muses:
         muse.start()
@@ -182,6 +201,8 @@ def stop_recording_data():
     
     for muse in muses:
         muse.stop()
+    asyncio.run(gopro_1.stop_shutter())
+    asyncio.run(gopro_2.stop_shutter())
     control.video_record_stop()
     for muse in muses:
         muse.disconnect()
