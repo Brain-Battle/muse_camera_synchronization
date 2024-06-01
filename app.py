@@ -1,204 +1,158 @@
 import tkinter as tk
-from tkinter import messagebox
-import numpy as np
-import pandas as pd
-import os
-from time import time, strftime, gmtime
-from muselsl.stream import find_muse
-from muselsl import backends
-from muselsl.muse import Muse
-from camera_control.lumix_control import LumixControl
-from camera_control import GoProControl
-import asyncio
-import logging
-
-logging.getLogger().setLevel(logging.INFO)
+from tkinter import messagebox, ttk
+from connection import LumixConnection, GoProConnection, MuseConnection, SocketConnection
+import time
 
 class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Device Connection and Recording")
+
+        self.entities = ["Lumix", "Android_WiFi", "Muse", "GoPro"]
+        self.table_data = []
+        self.connections = []
+
         instructions = (
             "Instructions:\n"
-            "1) Turn on Bluetooth\n"
-            "2) Connect to camera Wi-Fi\n"
-            "3) Connect EEG\n"
-            "4) Connect Camera\n"
+            "1) Click add device at the bottom\n"
+            "2) Double click on the row in a table to modify the row\n"
+            "3) Add parameters like IP address, IP address and port or name of a Muse device\n"
+            "4) Connect\n"
             "5) Start recording\n"
-            "6) Stop recording"
+            "6) Stop recording\n"
         )
         self.instructions_label = tk.Label(root, text=instructions, justify=tk.LEFT)
-        self.instructions_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky='w')
+        self.instructions_label.grid(row=0, column=0, columnspan=4, padx=10, pady=10, sticky='w')
 
-        self.camera_status_label = tk.Label(root, text="Camera Status:")
-        self.camera_status_label.grid(row=1, column=0, padx=10, pady=10, sticky='e')
-        self.camera_status = tk.StringVar()
-        self.camera_status.set("Not Connected")
-        self.camera_status_entry = tk.Entry(root, textvariable=self.camera_status, state='readonly')
-        self.camera_status_entry.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+        self.style = ttk.Style()
+        self.style.configure("Treeview.Heading", font=('Arial', 12, 'bold'))
+        self.style.configure("Treeview", font=('Arial', 10), rowheight=25)
+        self.style.map("Treeview", background=[('selected', '#347083')], foreground=[('selected', 'white')])
 
-        self.eeg_status_label = tk.Label(root, text="EEG Status:")
-        self.eeg_status_label.grid(row=2, column=0, padx=10, pady=10, sticky='e')
-        self.eeg_status = tk.StringVar()
-        self.eeg_status.set("Not Connected")
-        self.eeg_status_entry = tk.Entry(root, textvariable=self.eeg_status, state='readonly')
-        self.eeg_status_entry.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+        # Configure striped row colors
+        self.style.configure("Treeview", background="#f0f0ff", fieldbackground="#f0f0ff")
+        self.style.map("Treeview", background=[('selected', '#347083'), ('!selected', '#f0f0ff')])
 
-        self.eeg1_label = tk.Label(root, text="EEG1 Data:")
-        self.eeg1_label.grid(row=3, column=0, padx=10, pady=10, sticky='e')
-        self.eeg1_data = tk.StringVar()
-        self.eeg1_entry = tk.Entry(root, textvariable=self.eeg1_data)
-        self.eeg1_entry.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+        self.create_table()
 
-        self.eeg2_label = tk.Label(root, text="EEG2 Data:")
-        self.eeg2_label.grid(row=4, column=0, padx=10, pady=10, sticky='e')
-        self.eeg2_data = tk.StringVar()
-        self.eeg2_entry = tk.Entry(root, textvariable=self.eeg2_data)
-        self.eeg2_entry.grid(row=4, column=1, padx=10, pady=10, sticky='w')
+        self.add_row_button = tk.Button(root, text="Add Device", command=self.add_row)
+        self.add_row_button.grid(row=2, column=0, columnspan=4, pady=10, sticky='ew')
 
-        self.connect_camera_button = tk.Button(root, text="Connect Camera", command=self.connect_camera)
-        self.connect_camera_button.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky='ew')
-        self.connect_eeg_button = tk.Button(root, text="Connect EEG", command=self.connect_eeg)
-        self.connect_eeg_button.grid(row=6, column=0, columnspan=2, padx=10, pady=10, sticky='ew')
-        self.start_recording_button = tk.Button(root, text="Start Recording", command=self.start_recording)
-        self.start_recording_button.grid(row=7, column=0, columnspan=2, pady=10, sticky='ew')
-        self.stop_recording_button = tk.Button(root, text="Stop Recording", command=self.stop_recording)
-        self.stop_recording_button.grid(row=8, column=0, columnspan=2, pady=10, sticky='ew')
+        self.delete_row_button = tk.Button(root, text="Delete Device", command=self.delete_last_row)
+        self.delete_row_button.grid(row=3, column=0, columnspan=4, pady=10, sticky='ew')
 
-    def connect_camera(self):
-        connect_cameras()
-        self.camera_status.set("Connected")
-        messagebox.showinfo("Info", "Camera Connected")
+        self.add_row_button = tk.Button(root, text="Connect devices", command=self.connect_devices)
+        self.add_row_button.grid(row=4, column=0, columnspan=4, pady=10, sticky='ew')
 
-    def connect_eeg(self):
-        eeg1_data = self.eeg1_data.get()
-        eeg2_data = self.eeg2_data.get()
-        if eeg1_data and eeg2_data:
-            connect_EEG(fnames=["1.csv", "2.csv"], names=[eeg1_data, eeg2_data])
-            self.eeg_status.set("Connected")
-            messagebox.showinfo("Info", f"EEG Connected with data: EEG1={eeg1_data}, EEG2={eeg2_data}")
-        elif eeg1_data:
-            connect_EEG(fnames=["1.csv"], names=[eeg1_data])
-            self.eeg_status.set("Connected")
-            messagebox.showinfo("Info", f"EEG Connected with data: EEG1={eeg1_data}")
+        self.add_row_button = tk.Button(root, text="Start recordings", command=self.start_recordings)
+        self.add_row_button.grid(row=5, column=0, columnspan=4, pady=10, sticky='ew')
+
+        self.add_row_button = tk.Button(root, text="Stop recordings", command=self.stop_recordings)
+        self.add_row_button.grid(row=6, column=0, columnspan=4, pady=10, sticky='ew')
+
+
+    def delete_last_row(self):
+        if self.table_data:
+            last_row_id = len(self.table_data) - 1
+            self.tree.delete(last_row_id)
+            del self.table_data[last_row_id]
+            self.update_tree()
         else:
-            messagebox.showwarning("Warning", "Please enter data for both EEG1 and EEG2")
+            messagebox.showinfo("Delete Device", "No devices to delete.")
 
-    def start_recording(self):
-        if self.camera_status.get() == "Connected" and self.eeg_status.get() == "Connected":
-            start_data_recording()
-            messagebox.showinfo("Info", "Recording Started")
-        else:
-            messagebox.showwarning("Warning", "Please connect both Camera and EEG before recording")
+    def create_table(self):
+        self.tree = ttk.Treeview(self.root, columns=("Device", "Parameters"), show='headings')
+        self.tree.heading("Device", text="Device")
+        self.tree.heading("Parameters", text="Parameters")
+        self.tree.grid(row=1, column=0, columnspan=4, padx=10, pady=10, sticky='ew')
 
-    def stop_recording(self):
-        if self.camera_status.get() == "Connected" and self.eeg_status.get() == "Connected":
-            stop_recording_data()
-            messagebox.showinfo("Info", "Recording Stopped")
-        else:
-            messagebox.showwarning("Warning", "Recording is not in progress or devices are not connected")
+        self.tree.tag_configure('oddrow', background='#f0f0ff')
+        self.tree.tag_configure('evenrow', background='#ffffff')
 
-eeg_samples = []
-timestamps = []
-muses = []
-t_init = 0
-video_init = 0
-control = None
-filenames = []
+        self.tree.bind("<Double-1>", self.on_double_click)
 
-"""
-    This is a modified version of the record_direct function that ships with muselsl.
-    
-    It adds camera functions on it which allows to start the cameras and Muse device
-    at the same time.
-"""
+    def add_row(self):
+        row_id = len(self.table_data)
+        self.table_data.append({"device": tk.StringVar(), "parameters": tk.StringVar()})
 
-def connect_EEG(fnames:list,
-            backend='auto',
-            interface=None,
-            names=None):
-    global eeg_samples
-    global timestamps
-    global muses
-    global filenames
-    filenames = fnames
-    devices_number = len(names)
-    addresses = [0 for i in range(devices_number)]
-    if backend == 'bluemuse':
-        raise (NotImplementedError(
-            'Direct record not supported with BlueMuse backend. Use record after starting stream instead.'
-        ))
-    for device in range(devices_number):
-        found_muse = find_muse(names[device], backend)
-        if not found_muse:
-            print('Muse could not be found')
-            return
-        else:
-            addresses[device] = found_muse['address']
-            names[device] = found_muse['name']
-            print('Connecting to %s : %s...' % (names[device] if names[device] else 'Muse', addresses[device]))
-    for device in range(len(filenames)):
-        filenames[device] = os.path.join(
-            os.getcwd(),
-            (f"recording{device}_%s.csv" % strftime("%Y-%m-%d-%H.%M.%S", gmtime())))
-    eeg_samples = [[] for i in range(devices_number)]
-    timestamps = [[] for i in range(devices_number)]
-    muses = []
-    for device in range(devices_number):
-        def save_eeg(new_samples, new_timestamps):
-            eeg_samples[device].append(new_samples)
-            timestamps[device].append(new_timestamps)
-        muses.append(Muse(addresses[device], save_eeg, backend=backend))
-    for muse in muses:
-        muse.connect()
+        tag = 'evenrow' if row_id % 2 == 0 else 'oddrow'
+        self.tree.insert('', 'end', iid=row_id, values=("Select Device", "Enter Parameters"), tags=(tag,))
+        self.update_tree()
 
-def connect_cameras(IP="192.168.54.1"):
-    global control
-    control = LumixControl(IP)
-    control.start_camera_control()
+    def on_double_click(self, event):
+        item = self.tree.selection()[0]
+        row_id = int(item)
+        self.edit_row(row_id)
 
-def start_data_recording():
-    global muses
-    global control
-    global t_init
-    global video_init
+    def edit_row(self, row_id):
+        edit_window = tk.Toplevel(self.root)
+        edit_window.title("Edit Row")
 
-    control.video_record_start()
-    video_init = time()
-    for muse in muses:
-        muse.start()
-    t_init = time()
-    print('Start video recording at time t= %.3f' % video_init)
-    print('Start recording at time t=%.3f' % t_init)
+        tk.Label(edit_window, text="Entity:").grid(row=0, column=0, padx=10, pady=5)
+        entity_menu = ttk.Combobox(edit_window, textvariable=self.table_data[row_id]["device"])
+        entity_menu['values'] = self.entities
+        entity_menu.grid(row=0, column=1, padx=10, pady=5)
+        entity_menu.set(self.tree.item(row_id, 'values')[0])
 
-def stop_recording_data():
-    global eeg_samples
-    global timestamps
-    global muses
-    global control
-    global t_init
-    global video_init
-    global filenames
-    
-    for muse in muses:
-        muse.stop()
-    control.video_record_stop()
-    for muse in muses:
-        muse.disconnect()
-    for device in range(len(muses)):
-        timestamps[device] = np.concatenate(timestamps[device])
-        eeg_samples[device] = np.concatenate(eeg_samples[device], 1).T
-        recording = pd.DataFrame(
-            data=eeg_samples[device], columns=['TP9', 'AF7', 'AF8', 'TP10', 'Right AUX'])
-        recording['timestamps'] = timestamps[device]
+        tk.Label(edit_window, text="Parameters:").grid(row=1, column=0, padx=10, pady=5)
+        param_entry = tk.Entry(edit_window, textvariable=self.table_data[row_id]["parameters"])
+        param_entry.grid(row=1, column=1, padx=10, pady=5)
+        param_entry.insert(0, self.tree.item(row_id, 'values')[1])
 
-        directory = os.path.dirname(filenames[device])
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        save_button = tk.Button(edit_window, text="Save", command=lambda: self.save_row(row_id, edit_window))
+        save_button.grid(row=2, column=0, columnspan=2, pady=10)
 
-        recording.to_csv(filenames[device], float_format='%.3f')
-        print('Done - wrote file: ' + filenames[device] + '.')
-        print('Time difference between Muse and Video: ', t_init - video_init)
+    def save_row(self, row_id, edit_window):
+        self.update_tree()
+        edit_window.destroy()
+
+    def update_tree(self):
+        for row_id, data in enumerate(self.table_data):
+            self.tree.item(row_id, values=(data["device"].get(), data["parameters"].get()))
+
+    def connect_devices(self):
+        device_list = self.get_device_list()
+        self.connections = []
+        for entity in device_list:
+            device = entity[0]
+            params = entity[1]
+            if device == "Lumix":
+                self.connections.append(LumixConnection(params).connect())
+            elif device == "Android_WiFi":
+                l = params.split(":")
+                ip = l[0]
+                if len(l) == 1:
+                    port = 3000
+                else:
+                    port = int(l[1])
+                self.connections.append(SocketConnection(ip, port).connect())
+            elif device == "Muse":
+                self.connections.append(MuseConnection(params).connect())
+            elif device == "GoPro":
+                self.connections.append(GoProConnection().connect())
+            else:
+                assert False
+        #GoProConnection.refresh()
+
+        print("Connecting devices:", device_list)
+        messagebox.showinfo("Connect Devices", f"Connecting devices: {device_list}")
+
+    def start_recordings(self):
+        for connection in self.connections:
+            connection.start_recording()
+        print("Starting recordings")
+        messagebox.showinfo("Start Recordings", "Starting recordings...")
+
+    def stop_recordings(self):
+        for connection in self.connections:
+            connection.stop_recording()
+        print("Stopping recordings")
+        messagebox.showinfo("Stop Recordings", "Stopping recordings...")
+
+    def get_device_list(self):
+        return [(data["device"].get(), data["parameters"].get()) for data in self.table_data]
+
+
 
 if __name__ == "__main__":
     root = tk.Tk()
