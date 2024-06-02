@@ -3,7 +3,7 @@ from .camera_control import GoProControl
 import asyncio
 
 class GoProConnection(Connection):
-    device_list = asyncio.run(GoProControl.search_device())
+    #device_list = asyncio.run(GoProControl.search_device())
     def __init__(self):
         self.control = GoProControl()
     

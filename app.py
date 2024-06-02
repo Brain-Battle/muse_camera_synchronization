@@ -80,6 +80,8 @@ class App:
         self.update_tree()
 
     def on_double_click(self, event):
+        if len(self.tree.selection()) == 0:
+            return
         item = self.tree.selection()[0]
         row_id = int(item)
         self.edit_row(row_id)

@@ -15,7 +15,7 @@ class MuseConnection(Connection):
         found_muse = find_muse(self.name, 'auto')
         if not found_muse:
             print('Muse could not be found')
-            return
+            return  
         else:
             self.address = found_muse['address']
             self.name = found_muse['name']
@@ -36,6 +36,7 @@ class MuseConnection(Connection):
         return self
 
     def stop_recording(self):
+        self.muse.disconnect()
         timestamps = np.concatenate(self.timestamps)
         eeg_samples = np.concatenate(self.eeg_samples, 1).T
         recording = pd.DataFrame(
